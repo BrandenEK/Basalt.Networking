@@ -2,7 +2,7 @@
 
 namespace Basalt.Networking;
 
-public static class SocketExtensions
+internal static class SocketExtensions
 {
     public static bool IsConnected(this Socket s)
     {

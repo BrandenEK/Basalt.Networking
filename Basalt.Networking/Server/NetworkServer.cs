@@ -5,9 +5,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-namespace Basalt.Networking;
+namespace Basalt.Networking.Server;
 
-public class Server
+public class NetworkServer
 {
     private readonly TcpListener _listener;
     private readonly Thread _thread;
@@ -18,7 +18,7 @@ public class Server
     public string Ip { get; }
     public int Port { get; }
 
-    public Server(int port)
+    public NetworkServer(int port)
     {
         _listener = new TcpListener(IPAddress.Any, port);
         _listener.Start();

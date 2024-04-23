@@ -2,9 +2,9 @@
 using System.Text;
 using System.Threading;
 
-namespace Basalt.Networking;
+namespace Basalt.Networking.Client;
 
-public class Client
+public class NetworkClient
 {
     private readonly TcpClient _client;
     private readonly Thread _thread;
@@ -13,7 +13,7 @@ public class Client
     public string Ip { get; }
     public int Port { get; }
 
-    public Client(string ip, int port)
+    public NetworkClient(string ip, int port)
     {
         _client = new TcpClient(ip, port);
 
@@ -27,7 +27,7 @@ public class Client
     public void Disconnect()
     {
         _client.Close();
-        
+
         _active = false;
     }
 

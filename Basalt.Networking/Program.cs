@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text;
 using System.Threading;
+using Basalt.Networking.Client;
+using Basalt.Networking.Server;
 
 namespace Basalt.Networking;
 
@@ -22,7 +24,7 @@ internal class Program
 
     static void RunClient()
     {
-        var client = new Client("192.168.1.117", 8989);
+        var client = new NetworkClient("192.168.1.117", 8989);
 
         Thread.Sleep(1000);
 
@@ -35,7 +37,7 @@ internal class Program
 
     static void RunServer()
     {
-        var server = new Server(8989);
+        var server = new NetworkServer(8989);
 
         Thread.Sleep(1000);
 
