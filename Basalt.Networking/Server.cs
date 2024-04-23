@@ -30,6 +30,9 @@ public class Server
 
     public void Disconnect()
     {
+        foreach (var client in _clients.Values)
+            client.Close();
+        _clients.Clear();
         _listener.Stop();
         _shouldStop = true;
     }
@@ -59,7 +62,7 @@ public class Server
         return thread;
     }
 
-    private void ReadLoop(object state)
+    private void ReadLoop()
     {
         while (!_shouldStop)
         {
@@ -84,10 +87,8 @@ public class Server
             Logger.Warn($"Accepting new client: {client.Client.RemoteEndPoint}");
         }
 
-        List<TcpClient> toRemove = new();
-
         // Remove all clients that have been disconnected
-        foreach (string ip in _clients.Where(kvp => !kvp.Value.Connected).Select(kvp => kvp.Key))
+        foreach (string ip in _clients.Where(kvp => !kvp.Value.Client.IsConnected()).Select(kvp => kvp.Key))
         {
             Logger.Warn($"Client has been disconnected: {ip}");
             _clients.Remove(ip);
@@ -96,12 +97,6 @@ public class Server
         // Read data from all client streams
         foreach (var client in _clients.Values)
         {
-            //if (!client.Connected)
-            //{
-            //    toRemove.Add(client);
-            //    continue;
-            //}
-
             if (client.Available == 0)
                 continue;
 
@@ -110,15 +105,6 @@ public class Server
 
             Logger.Error($"Received: {Encoding.UTF8.GetString(buffer)}");
         }
-
-        //foreach (var client in toRemove)
-        //{
-        //    Console.WriteLine("Disconnected client");
-        //    _clients.Remove(client);
-        //}
-
-        //OnReceive(this, new Packet(buffer));
-
     }
 
     private const int READ_INTERVAL = 1000;

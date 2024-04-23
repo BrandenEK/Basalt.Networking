@@ -43,7 +43,7 @@ public class Client
         return thread;
     }
 
-    private void ReadLoop(object state)
+    private void ReadLoop()
     {
         while (!_shouldStop)
         {
@@ -60,6 +60,14 @@ public class Client
 
     private void ReadStep()
     {
+        Logger.Warn($"Client connection: {_client.Client.IsConnected()}");
+        if (!_client.Client.IsConnected())
+        {
+            Logger.Error("Disconnected from server");
+            Disconnect();
+            return;
+        }
+
         if (_client.Available == 0)
             return;
 
