@@ -29,6 +29,7 @@ internal class Program
         Thread.Sleep(1000);
 
         client.Send(Encoding.UTF8.GetBytes("Sending to server"));
+        var otherClient = new NetworkClient("192.168.1.117", 8989);
 
         Thread.Sleep(1000);
 
@@ -43,13 +44,9 @@ internal class Program
 
         server.Broadcast(Encoding.UTF8.GetBytes("Sending to client"));
 
-        Thread.Sleep(1000);
-        Console.ReadKey();
+        //Thread.Sleep(1000);
+        //Console.ReadKey();
         
-        server.Disconnect();
-
-        Thread.Sleep(1000);
-
-        server.Broadcast(new byte[] {5 , 5});
+        //server.Disconnect();
     }
 }
