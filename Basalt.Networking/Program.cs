@@ -1,5 +1,4 @@
 ﻿using System;
-using Basalt.Networking.Old;
 
 namespace Basalt.Networking;
 
@@ -9,12 +8,8 @@ internal class Program
     {
         Console.WriteLine("Hello, World!");
 
-#if DEBUG
-        Client c = new Client();
-        c.Connect("localhost", 8989);
-#else
-        Listener l = new(null, System.Net.IPAddress.Any, 8989);
-#endif
+        var server = new Server(8989);
+
         Console.WriteLine("Press any key to terminate...");
         Console.ReadKey();
     }
