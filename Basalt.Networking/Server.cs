@@ -11,9 +11,9 @@ public class Server
 {
     private readonly TcpListener _listener;
     private readonly Thread _thread;
+    private bool _active = false;
 
     private readonly Dictionary<string, TcpClient> _clients = new();
-    private bool _shouldStop = false;
 
     public string Ip { get; }
     public int Port { get; }
@@ -22,10 +22,12 @@ public class Server
     {
         _listener = new TcpListener(IPAddress.Any, port);
         _listener.Start();
-        _thread = StartReadThread();
 
         Ip = _listener.LocalEndpoint.ToString()!;
         Port = port;
+
+        _thread = StartReadThread();
+        _active = true;
     }
 
     public void Disconnect()
@@ -34,11 +36,15 @@ public class Server
             client.Close();
         _clients.Clear();
         _listener.Stop();
-        _shouldStop = true;
+
+        _active = false;
     }
 
     public void Send(string ip, byte[] data)
     {
+        if (!_active)
+            throw new TcpServerException("Can not send data on inactive server");
+
         if (_clients.TryGetValue(ip, out TcpClient? client))
         {
             client.GetStream().Write(data, 0, data.Length);
@@ -47,6 +53,9 @@ public class Server
 
     public void Broadcast(byte[] data)
     {
+        if (!_active)
+            throw new TcpServerException("Can not send data on inactive server");
+
         foreach (var client in _clients.Values)
         {
             client.GetStream().Write(data, 0, data.Length);
@@ -64,7 +73,7 @@ public class Server
 
     private void ReadLoop()
     {
-        while (!_shouldStop)
+        while (_active)
         {
             try
             {

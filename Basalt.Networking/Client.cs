@@ -8,8 +8,7 @@ public class Client
 {
     private readonly TcpClient _client;
     private readonly Thread _thread;
-
-    private bool _shouldStop = false;
+    private bool _active = false;
 
     public string Ip { get; }
     public int Port { get; }
@@ -17,20 +16,26 @@ public class Client
     public Client(string ip, int port)
     {
         _client = new TcpClient(ip, port);
-        _thread = StartReadThread();
 
         Ip = ip;
         Port = port;
+
+        _thread = StartReadThread();
+        _active = true;
     }
 
     public void Disconnect()
     {
         _client.Close();
-        _shouldStop = true;
+        
+        _active = false;
     }
 
     public void Send(byte[] data)
     {
+        if (!_active)
+            throw new TcpClientException("Can not send data on inactive client");
+
         _client.GetStream().Write(data, 0, data.Length);
     }
 
@@ -45,7 +50,7 @@ public class Client
 
     private void ReadLoop()
     {
-        while (!_shouldStop)
+        while (_active)
         {
             try
             {
@@ -60,7 +65,6 @@ public class Client
 
     private void ReadStep()
     {
-        Logger.Warn($"Client connection: {_client.Client.IsConnected()}");
         if (!_client.Client.IsConnected())
         {
             Logger.Error("Disconnected from server");
