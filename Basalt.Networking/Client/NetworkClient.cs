@@ -59,7 +59,7 @@ public class NetworkClient
             }
             catch { }
 
-            Thread.Sleep(READ_INTERVAL);
+            Thread.Sleep(NetworkProperties.ReadIntervalMilliseconds);
         }
     }
 
@@ -80,6 +80,4 @@ public class NetworkClient
 
         Logger.Error($"Received: {Encoding.UTF8.GetString(buffer)}");
     }
-
-    private const int READ_INTERVAL = 1000;
 }

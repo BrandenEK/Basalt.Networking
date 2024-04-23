@@ -11,6 +11,7 @@ internal class Program
     static void Main(string[] args)
     {
         Console.WriteLine("Hello, World!");
+        NetworkProperties.ReadIntervalMilliseconds = 1000;
 
 #if DEBUG
         RunClient();
