@@ -7,16 +7,15 @@ namespace Basalt.Networking.Serializers;
 
 public class PacketSerializer
 {
-    private readonly Dictionary<Type, Func<object?, byte[]>> _serializers = new();
+    private readonly Dictionary<Type, ITypeSerializer> _serializers = new();
 
     public PacketSerializer()
     {
-        AddSerializer(typeof(byte), obj => new byte[] { (byte)(obj ?? 0) });
-        AddSerializer(typeof(int), obj => BitConverter.GetBytes((int)(obj ?? 0)));
-        AddSerializer(typeof(long), obj => BitConverter.GetBytes((long)(obj ?? 0)));
+        AddSerializer(typeof(byte), new Int8Serializer());
+        AddSerializer(typeof(long), new Int64Serializer());
     }
 
-    public void AddSerializer(Type type, Func<object?, byte[]> serializer)
+    public void AddSerializer(Type type, ITypeSerializer serializer)
     {
         if (!_serializers.ContainsKey(type))
             _serializers.Add(type, serializer);
@@ -44,7 +43,7 @@ public class PacketSerializer
     private byte[] SerializeProperty(Type type, object? value)
     {
         return _serializers.TryGetValue(type, out var serializer)
-            ? serializer(value)
+            ? serializer.Serialize(value)
             : throw new Exception($"Failed to serialize unsupported type: {type.FullName}");
     }
 }
