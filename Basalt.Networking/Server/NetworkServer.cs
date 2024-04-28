@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -21,6 +22,7 @@ public class NetworkServer
     public NetworkServer(int port)
     {
         _listener = new TcpListener(IPAddress.Any, port);
+        _listener.Server.NoDelay = NetworkProperties.NoDelay;
         _listener.Start();
 
         Ip = _listener.LocalEndpoint.ToString()!;
@@ -77,7 +79,7 @@ public class NetworkServer
         {
             try
             {
-                Logger.Info("Server: Beginning read step");
+                //Logger.Info("Server: Beginning read step");
                 ReadStep();
             }
             catch { }
@@ -92,6 +94,8 @@ public class NetworkServer
         if (_listener.Pending())
         {
             TcpClient client = _listener.AcceptTcpClient();
+            client.NoDelay = NetworkProperties.NoDelay;
+            client.Client.NoDelay = NetworkProperties.NoDelay;
             _clients.Add(client.Client.RemoteEndPoint!.ToString()!, client);
             Logger.Warn($"Accepting new client: {client.Client.RemoteEndPoint}");
         }
@@ -112,7 +116,17 @@ public class NetworkServer
             byte[] buffer = new byte[client.Available];
             client.Client.Receive(buffer, 0, buffer.Length, SocketFlags.None);
 
-            Logger.Error($"Received: {Encoding.UTF8.GetString(buffer)}");
+            long sendTime = BitConverter.ToInt64(buffer, 0);
+            TimeSpan span = new(DateTime.Now.Ticks - sendTime);
+
+            totalPing += span.TotalMilliseconds;
+            totalAmount++;
+
+            Logger.Error($"Current ping: {span.TotalMilliseconds} ms");
+            Logger.Warn($"Average ping: {totalPing / totalAmount}");
         }
     }
+
+    private static double totalPing = 0;
+    private static int totalAmount = 0;
 }

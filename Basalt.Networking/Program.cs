@@ -27,27 +27,15 @@ internal class Program
     {
         var client = new NetworkClient("192.168.1.117", 8989);
 
-        Thread.Sleep(1000);
-
-        client.Send(Encoding.UTF8.GetBytes("Sending to server"));
-        var otherClient = new NetworkClient("192.168.1.117", 8989);
-
-        Thread.Sleep(1000);
-
-        client.Send(new byte[] { 5, 5 });
+        while (true)
+        {
+            client.Send(BitConverter.GetBytes(DateTime.Now.Ticks));
+            Thread.Sleep(500);
+        }
     }
 
     static void RunServer()
     {
         var server = new NetworkServer(8989);
-
-        Thread.Sleep(1000);
-
-        server.Broadcast(Encoding.UTF8.GetBytes("Sending to client"));
-
-        //Thread.Sleep(1000);
-        //Console.ReadKey();
-        
-        //server.Disconnect();
     }
 }

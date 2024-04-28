@@ -16,6 +16,8 @@ public class NetworkClient
     public NetworkClient(string ip, int port)
     {
         _client = new TcpClient(ip, port);
+        _client.NoDelay = NetworkProperties.NoDelay;
+        _client.Client.NoDelay = NetworkProperties.NoDelay;
 
         Ip = ip;
         Port = port;
