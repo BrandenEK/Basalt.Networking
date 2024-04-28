@@ -29,7 +29,6 @@ internal class Program
 
         while (client.IsActive)
         {
-            client.Receive();
             client.Send(BitConverter.GetBytes(DateTime.Now.Ticks));
             Thread.Sleep(500);
         }

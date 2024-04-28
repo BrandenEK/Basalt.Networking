@@ -32,7 +32,9 @@ public class NetworkClient
     public void Send(byte[] data)
     {
         if (!IsActive)
-            throw new TcpClientException("Can not send data on inactive client");
+            throw new NetworkSendException();
+
+        CheckConnectionStatus();
 
         _client.GetStream().Write(data, 0, data.Length);
     }
@@ -40,14 +42,9 @@ public class NetworkClient
     public byte[] Receive()
     {
         if (!IsActive)
-            throw new TcpClientException("Can not receive data on inactive client");
+            throw new NetworkReceiveException();
 
-        if (!_client.Client.IsConnected())
-        {
-            Logger.Error("Disconnected from server");
-            Disconnect();
-            return [];
-        }
+        CheckConnectionStatus();
 
         if (_client.Available == 0)
             return [];
@@ -55,5 +52,14 @@ public class NetworkClient
         byte[] buffer = new byte[_client.Available];
         _client.Client.Receive(buffer, 0, buffer.Length, SocketFlags.None);
         return buffer;
+    }
+
+    private void CheckConnectionStatus()
+    {
+        if (IsActive && !_client.Client.IsConnected())
+        {
+            Disconnect();
+            throw new NetworkDisconnectException();
+        }
     }
 }
