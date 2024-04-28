@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading;
 using Basalt.Networking.Client;
 using Basalt.Networking.Server;
@@ -10,8 +9,7 @@ internal class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("Hello, World!");
-        NetworkProperties.ReadIntervalMilliseconds = 1000;
+        Console.WriteLine("Basalt Networking Interface");
 
 #if DEBUG
         RunClient();
