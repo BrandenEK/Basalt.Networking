@@ -27,8 +27,9 @@ internal class Program
     {
         var client = new NetworkClient("192.168.1.117", 8989);
 
-        while (true)
+        while (client.IsActive)
         {
+            client.Receive();
             client.Send(BitConverter.GetBytes(DateTime.Now.Ticks));
             Thread.Sleep(500);
         }

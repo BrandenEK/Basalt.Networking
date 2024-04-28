@@ -1,16 +1,19 @@
 ﻿using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 
 namespace Basalt.Networking.Client;
 
-public class NetworkClient
+public class NetworkClientWithEvents
 {
     private readonly TcpClient _client;
-    public bool IsActive { get; private set; }
+    private readonly Thread _thread;
+    private bool _active = false;
 
     public string Ip { get; }
     public int Port { get; }
 
-    public NetworkClient(string ip, int port)
+    public NetworkClientWithEvents(string ip, int port)
     {
         _client = new TcpClient(ip, port);
         _client.NoDelay = NetworkProperties.NoDelay;
@@ -19,41 +22,65 @@ public class NetworkClient
         Ip = ip;
         Port = port;
 
-        IsActive = true;
+        _thread = StartReadThread();
+        _active = true;
     }
 
     public void Disconnect()
     {
         _client.Close();
 
-        IsActive = false;
+        _active = false;
     }
 
     public void Send(byte[] data)
     {
-        if (!IsActive)
+        if (!_active)
             throw new TcpClientException("Can not send data on inactive client");
 
         _client.GetStream().Write(data, 0, data.Length);
     }
 
-    public byte[] Receive()
+    private Thread StartReadThread()
     {
-        if (!IsActive)
-            throw new TcpClientException("Can not receive data on inactive client");
+        Thread thread = new Thread(ReadLoop);
+        thread.IsBackground = true;
+        thread.Start();
 
+        return thread;
+    }
+
+    private void ReadLoop()
+    {
+        while (_active)
+        {
+            try
+            {
+                Logger.Info("Client: Beginning read step");
+                ReadStep();
+            }
+            catch { }
+
+            Thread.Sleep(NetworkProperties.ReadIntervalMilliseconds);
+        }
+    }
+
+    private void ReadStep()
+    {
         if (!_client.Client.IsConnected())
         {
             Logger.Error("Disconnected from server");
             Disconnect();
-            return [];
+            return;
         }
 
         if (_client.Available == 0)
-            return [];
+            return;
 
         byte[] buffer = new byte[_client.Available];
         _client.Client.Receive(buffer, 0, buffer.Length, SocketFlags.None);
-        return buffer;
+
+        Logger.Error($"Received: {Encoding.UTF8.GetString(buffer)}");
     }
+
 }
