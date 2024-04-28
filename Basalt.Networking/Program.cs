@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Basalt.Networking.Client;
+using Basalt.Networking.Serializers;
 using Basalt.Networking.Server;
 
 namespace Basalt.Networking;
@@ -11,8 +12,16 @@ internal class Program
     {
         Console.WriteLine("Basalt Networking Interface");
 
+        var serializer = new PacketSerializer();
+        var packet = new PingPacket()
+        {
+            Ticks = DateTime.Now.Ticks
+        };
+
+        Logger.Error(serializer.Serialize(packet).Length);
+
 #if DEBUG
-        RunClient();
+        //RunClient();
 #else
         RunServer();
 #endif
@@ -58,4 +67,11 @@ internal class Program
             Thread.Sleep(16);
         }
     }
+}
+
+public class PingPacket : IPacket
+{
+    public byte Id => 0;
+
+    public long Ticks { get; set; }
 }
