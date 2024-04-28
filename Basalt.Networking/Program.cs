@@ -36,6 +36,28 @@ internal class Program
 
     static void RunServer()
     {
+        double totalPing = 0;
+        int totalAmount = 0;
+
         var server = new NetworkServer(8989);
+
+        while (server.IsActive)
+        {
+            var bytes = server.Receive();
+
+            if (bytes.Length != 0)
+            {
+                long sendTime = BitConverter.ToInt64(bytes, 0);
+                TimeSpan span = new(DateTime.Now.Ticks - sendTime);
+
+                totalPing += span.TotalMilliseconds;
+                totalAmount++;
+
+                Logger.Error($"Current ping: {span.TotalMilliseconds} ms");
+                Logger.Warn($"Average ping: {totalPing / totalAmount}");
+            }
+
+            Thread.Sleep(16);
+        }
     }
 }

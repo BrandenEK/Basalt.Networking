@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 
 namespace Basalt.Networking.Server;
 
 public class NetworkServer
 {
     private readonly TcpListener _listener;
-    private readonly Thread _thread;
-    private bool _active = false;
+    public bool IsActive { get; private set; }
 
     private readonly Dictionary<string, TcpClient> _clients = new();
 
@@ -28,24 +24,23 @@ public class NetworkServer
         Ip = _listener.LocalEndpoint.ToString()!;
         Port = port;
 
-        _thread = StartReadThread();
-        _active = true;
+        IsActive = true;
     }
 
-    public void Disconnect()
+    public void Stop()
     {
         foreach (var client in _clients.Values)
             client.Close();
         _clients.Clear();
         _listener.Stop();
 
-        _active = false;
+        IsActive = false;
     }
 
     public void Send(string ip, byte[] data)
     {
-        if (!_active)
-            throw new TcpServerException("Can not send data on inactive server");
+        if (!IsActive)
+            throw new NetworkSendException();
 
         if (_clients.TryGetValue(ip, out TcpClient? client))
         {
@@ -55,8 +50,8 @@ public class NetworkServer
 
     public void Broadcast(byte[] data)
     {
-        if (!_active)
-            throw new TcpServerException("Can not send data on inactive server");
+        if (!IsActive)
+            throw new NetworkSendException();
 
         foreach (var client in _clients.Values)
         {
@@ -64,47 +59,21 @@ public class NetworkServer
         }
     }
 
-    private Thread StartReadThread()
+    public byte[] Receive()
     {
-        Thread thread = new Thread(ReadLoop);
-        thread.IsBackground = true;
-        thread.Start();
+        if (!IsActive)
+            throw new NetworkReceiveException();
 
-        return thread;
-    }
-
-    private void ReadLoop()
-    {
-        while (_active)
-        {
-            try
-            {
-                //Logger.Info("Server: Beginning read step");
-                ReadStep();
-            }
-            catch { }
-
-            Thread.Sleep(NetworkProperties.ReadIntervalMilliseconds);
-        }
-    }
-
-    private void ReadStep()
-    {
         // Check for new connections
         if (_listener.Pending())
         {
-            TcpClient client = _listener.AcceptTcpClient();
-            client.NoDelay = NetworkProperties.NoDelay;
-            client.Client.NoDelay = NetworkProperties.NoDelay;
-            _clients.Add(client.Client.RemoteEndPoint!.ToString()!, client);
-            Logger.Warn($"Accepting new client: {client.Client.RemoteEndPoint}");
+            ConnectClient(_listener.AcceptTcpClient());
         }
 
         // Remove all clients that have been disconnected
         foreach (string ip in _clients.Where(kvp => !kvp.Value.Client.IsConnected()).Select(kvp => kvp.Key))
         {
-            Logger.Warn($"Client has been disconnected: {ip}");
-            _clients.Remove(ip);
+            DisconnectClient(ip);
         }
 
         // Read data from all client streams
@@ -115,18 +84,24 @@ public class NetworkServer
 
             byte[] buffer = new byte[client.Available];
             client.Client.Receive(buffer, 0, buffer.Length, SocketFlags.None);
-
-            long sendTime = BitConverter.ToInt64(buffer, 0);
-            TimeSpan span = new(DateTime.Now.Ticks - sendTime);
-
-            totalPing += span.TotalMilliseconds;
-            totalAmount++;
-
-            Logger.Error($"Current ping: {span.TotalMilliseconds} ms");
-            Logger.Warn($"Average ping: {totalPing / totalAmount}");
+            return buffer;
+            // This is wrong, need to do something for multiple clients
         }
+
+        return [];
     }
 
-    private static double totalPing = 0;
-    private static int totalAmount = 0;
+    private void ConnectClient(TcpClient client)
+    {
+        client.NoDelay = NetworkProperties.NoDelay;
+        client.Client.NoDelay = NetworkProperties.NoDelay;
+        _clients.Add(client.Client.RemoteEndPoint!.ToString()!, client);
+        Logger.Warn($"Accepting new client: {client.Client.RemoteEndPoint}");
+    }
+
+    private void DisconnectClient(string ip)
+    {
+        Logger.Warn($"Client has been disconnected: {ip}");
+        _clients.Remove(ip);
+    }
 }
